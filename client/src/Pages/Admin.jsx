@@ -19,6 +19,7 @@ export default function Admin() {
     } catch (error) {
       console.error("Error fetching blogs:", error);
     }
+    console.log(Blogs);
   };
 
   useEffect(() => {
@@ -33,18 +34,40 @@ export default function Admin() {
         return;
       }
 
-      // Use send() instead of call() for state-changing transactions
+      // First handle the blockchain transaction
       const result = await contract.methods
         .approveBlog(id)
-        .send({ from: accounts[0] }); // Use accounts[0] instead of the whole accounts array
+        .send({ from: accounts[0] });
 
-      console.log("Transaction result:", result);
+      console.log("Blockchain transaction result:", result);
+
+      // Make API call to backend with correct URL
+      const response = await fetch(
+        `http://localhost:8000/api/blogs/${id}/approve`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // If using cookies
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Failed to update approval status in database"
+        );
+      }
 
       // Refresh the blogs list after successful approval
-      fetchBlogs();
+      //fetchBlogs();
+      alert("Blog approved successfully!");
     } catch (error) {
       console.error("Error approving blog:", error);
-      alert("Error approving blog. Check console for details.");
+      alert(
+        error.message || "Error approving blog. Check console for details."
+      );
     }
   };
   async function connectWallet() {
